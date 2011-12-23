@@ -20,9 +20,8 @@ Gem::Specification.new do |s|
   s.rdoc_options      = ["--charset=UTF-8"]
 
   s.add_dependency "resque", "~> 1.19.0"
-  s.add_dependency "eventmachine", "~> 0.12.10"
   s.add_dependency "em-synchrony", "~> 1.0.0"
-  s.add_dependency "redis"
+  s.add_dependency "em-redis"
 
   s.description = <<description
     Em-resque is a version of Resque, which offers non-blocking and non-forking
