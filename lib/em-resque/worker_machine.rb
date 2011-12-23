@@ -1,10 +1,11 @@
 require 'em-synchrony'
+require 'em-resque'
 require 'em-resque/worker'
 
 module EventMachine
   module Resque
     class WorkerMachine
-      def initialize(opts)
+      def initialize(opts = {})
         @concurrency = opts[:concurrency] || 20
         @interval = opts[:interval] || 5
         @fibers_count = opts[:fibers] || 1
@@ -61,7 +62,7 @@ module EventMachine
 
         @fibers = @workers.map do |worker|
           Fiber.new do
-            worker.log "startng async worker #{worker}"
+            worker.log "starting async worker #{worker}"
             worker.work(@interval)
           end
         end
