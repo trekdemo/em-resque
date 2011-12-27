@@ -4,7 +4,27 @@ require 'em-resque/worker'
 
 module EventMachine
   module Resque
+    # WorkerMachine is an EventMachine with Resque workers wrapped in Ruby
+    # fibers.
+    #
+    # An instance contains the workers and a system monitor running inside an
+    # EventMachine. The monitoring takes care of stopping the machine when all
+    # workers are shut down.
+
     class WorkerMachine
+      # Initializes the machine, creates the fibers and workers, traps quit
+      # signals and prunes dead workers
+      #
+      # == Options
+      # concurrency::  The number of green threads inside the machine (default 20)
+      # interval::     Time in seconds how often the workers check for new work
+      #                (default 5)
+      # fibers_count:: How many fibers (and workers) to be run inside the
+      #                machine (default 1)
+      # queues::       Which queues to poll (default all)
+      # verbose::      Verbose log output (default false)
+      # very_verbose:: Even more verbose log output (default false)
+      # pidfile::      The file to save the process id number
       def initialize(opts = {})
         @concurrency = opts[:concurrency] || 20
         @interval = opts[:interval] || 5
@@ -14,22 +34,23 @@ module EventMachine
         @very_verbose = opts[:very_verbose] || false
         @pidfile = opts[:pidfile]
 
+        raise(ArgumentError, "Should have at least one fiber") if @fibers_count < 1
+
         build_workers
         build_fibers
         trap_signals
         prune_dead_workers
       end
 
+      # Start the machine and start polling queues.
       def start
-        throw RuntimeError if @fibers.nil?
-
         EM.synchrony do
-          
           @fibers.each(&:resume)
-          garbage_collector.resume
+          system_monitor.resume
         end
       end
 
+      # Stop the machine.
       def stop
         @workers.each(&:shutdown)
         File.delete(@pidfile) if @pidfile
@@ -45,6 +66,7 @@ module EventMachine
 
       private
 
+      # Builds the workers to poll the given queues.
       def build_workers
         queues = @queues.to_s.split(',')
 
@@ -57,9 +79,8 @@ module EventMachine
         end
       end
 
+      # Builds the fibers to contain the built workers.
       def build_fibers
-        throw RuntimeError if @workers.nil?
-
         @fibers = @workers.map do |worker|
           Fiber.new do
             worker.log "starting async worker #{worker}"
@@ -68,19 +89,19 @@ module EventMachine
         end
       end
 
+      # Traps signals TERM, INT and QUIT to stop the machine.
       def trap_signals
-        ['TERM', 'INT', 'QUIT'].each do |signal| 
-          trap(signal) do 
-            stop
-          end
-        end
+        ['TERM', 'INT', 'QUIT'].each { |signal| trap(signal) { stop } }
       end
 
+      # Deletes worker information from Redis if there's now processes for
+      # their pids.
       def prune_dead_workers
         @workers.first.prune_dead_workers if @workers.size > 0
       end
 
-      def garbage_collector
+      # Shuts down the machine if all fibers are dead.
+      def system_monitor
         Fiber.new do
           loop do
             EM.stop unless fibers.any?(&:alive?)

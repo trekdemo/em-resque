@@ -10,4 +10,10 @@ context 'WorkerMachine' do
     assert_equal Fiber, machine.fibers.first.class
     assert_equal EM::Resque::Worker, machine.workers.first.class
   end
+
+  test 'should not run with under one fibers' do
+    assert_raise(ArgumentError, "Should have at least one fiber") do
+      machine = EM::Resque::WorkerMachine.new :fibers => 0
+    end
+  end
 end
