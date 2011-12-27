@@ -23,18 +23,18 @@ module EventMachine
       #                machine (default 1)
       # queues::       Which queues to poll (default all)
       # verbose::      Verbose log output (default false)
-      # very_verbose:: Even more verbose log output (default false)
+      # vverbose::     Even more verbose log output (default false)
       # pidfile::      The file to save the process id number
       def initialize(opts = {})
         @concurrency = opts[:concurrency] || 20
         @interval = opts[:interval] || 5
         @fibers_count = opts[:fibers] || 1
-        @queues = opts[:queues] || '*'
-        @verbose = opts[:verbose] || false
-        @very_verbose = opts[:very_verbose] || false
+        @queues = opts[:queue] || opts[:queues] || '*'
+        @verbose = opts[:logging] || opts[:verbose] || false
+        @very_verbose = opts[:vverbose] || false
         @pidfile = opts[:pidfile]
 
-        raise(ArgumentError, "Should have at least one fiber") if @fibers_count < 1
+        raise(ArgumentError, "Should have at least one fiber") if @fibers_count.to_i < 1
 
         build_workers
         build_fibers

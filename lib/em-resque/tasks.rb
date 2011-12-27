@@ -8,13 +8,18 @@ namespace :em_resque do
   task :work => [ :preload, :setup ] do
     require 'em-resque'
 
-    machine = EM::Resque::WorkerMachine.new(:concurrency => ENV['CONCURRENCY'],
-                                            :interval => ENV['INTERVAL'],
-                                            :fibers => ENV['FIBERS'],
-                                            :queues => ENV['QUEUE'] || ENV['QUEUES'],
-                                            :verbose => ENV['LOGGING'] || ENV['VERBOSE'],
-                                            :very_verbose => ENV['VVERBOSE'],
-                                            :pidfile => ENV['PIDFILE'])
+    integer_keys = %w(CONCURRENCY INTERVAL FIBERS)
+    string_keys = %w(QUEUE QUEUES PIDFILE)
+    bool_keys = %w(LOGGING VERBOSE VVERBOSE)
+
+    opts = ENV.reduce({}) do |acc, (k, v)|
+      acc.merge(k.downcase.to_sym => v.to_i) if integer_keys.any?{|ik| ik == k}
+      acc.merge(k.downcase.to_sym => v.to_s) if string_keys.any?{|sk| sk == k}
+      acc.merge(k.downcase.to_sym => v == '1' || v.downcase == 'true') if bool_keys.any?{|bk| bk == k}
+      acc
+    end
+
+    machine = EM::Resque::WorkerMachine.new(opts)
 
     machine.start
   end
