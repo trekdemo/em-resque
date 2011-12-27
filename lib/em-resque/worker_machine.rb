@@ -71,7 +71,7 @@ module EventMachine
         queues = @queues.to_s.split(',')
 
         @workers = (1..@fibers_count.to_i).map do
-          worker = EM::Resque::Worker.new(queues)
+          worker = EM::Resque::Worker.new(*queues)
           worker.verbose = @verbose
           worker.very_verbose = @very_verbose
 
