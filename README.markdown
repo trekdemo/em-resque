@@ -1,42 +1,31 @@
 EM::Resque
 ==========
 
-EM::Resque is an addition for [Resque][0] for asynchronic processing of the
+EM::Resque is an addition to [Resque][0] for asynchronic processing of the
 background jobs created by Resque. It works like the original Resque worker,
-but runs inside the [EventMachine][1] and uses instead of forking a new process
-for every worker, it runs in a single process and packs the workers in Ruby
-fibers.
+but runs inside an [EventMachine][1] and uses the same process instead of
+forking a new one for every job. It can run N workers inside one process, it
+packs all of them in Ruby fibers. The library is meant for small but IO-heavy
+jobs, which won't use much of CPU power in the running server.
 
 Use cases
 ---------
 
 EM::Resque is good for processing background jobs which are doing lots of IO.
-The evented nature of the reactor core pattern is great when accessing third
+The evented nature of the reactor core is great when accessing third
 party services with HTTP or doing lots of database-intensive work. When
 combined with a connection pool to a SQL server it lets you easily control the
-amount of connections being at the same time extremely scaleable.
-
-When to use the original Resque
--------------------------------
-
-If you do heavy computing with your workers and not using so much of IO, it is
-recommended to use the synchronous Resque instead of EM::Resque. EM::Resque is
-also not forking new processes for every task, so if using e.g. ActiveRecord
-it doesn't initialize the database every time which would otherwise kill the
-performance with short tasks. Although the original Resque is easier to fix
-when something goes wrong by terminating the child processes. With EM::Resque
-you have to take care of the main process, because all the workers are running
-in the same thread.
+amount of connections, being at the same time extremely scalable.
 
 Overview
 --------
 
 EM::Resque jobs are created and queued like with the synchronous version. When
-queued, the one of the workers in the fiber pool will pick it up and process
+queued, one of the workers in the fiber pool will pick it up and process
 the job.
 
-When making IO actions inside the job, it should never block the other workers. E.g.
-database operations should be handled with libraries that support EventMachine
+When making IO actions inside a job, it should never block the other workers. E.g.
+database operations etc. should be handled with libraries that support EventMachine
 to allow concurrent processing.
 
 Resque jobs are Ruby classes (or modules) which respond to the
@@ -75,19 +64,18 @@ queue.
 
 For more use cases please refer [the original Resque manual][0].
 
-Let's start 100 async workers to run `ping_publisher` jobs:
+Let's start 100 async workers to work on `ping_publisher` jobs:
 
     $ cd app_root
-    $ QUEUE=file_serve FIBERS=100 rake resque_async:work
+    $ QUEUE=file_serve FIBERS=100 rake em_resque:work
 
 This starts the EM::Resque process and loads 100 fibers with a worker inside
 each fiber and tells them to work off the `ping_publisher` queue. As soon as
-one of the workers is doing it's first IO action it will go to a waiting mode
+one of the workers is doing it's first IO action it will go to a "yield" mode
 to get data back from the IO and allow another one to start a new job. The
-event loop resumes the workers when they have some data back from the IO
-action.
+event loop resumes the worker when it has some data back from the IO action.
 
-The workers also reserve the jobs for them so other workers won't touch them.
+The workers also reserve the jobs for them so the other workers won't touch them.
 
 Workers can be given multiple queues (a "queue list") and run on
 multiple machines. In fact they can be run anywhere with network
@@ -118,14 +106,14 @@ The number of fibers for the current process is set in FIBERS variable. One
 fiber equals one worker. They are all polling the same queue and terminated
 when the main process terminates. The default value is 1.
 
-    $ QUEUE=ping_publisher FIBERS=50 rake resque_async:work
+    $ QUEUE=ping_publisher FIBERS=50 rake em_resque:work
 
 ### The amount of green threads
 
 EventMachine has an option to use defer for long-running processes to be run in
 a different thread. The default value is 20.
 
-    $ QUEUE=ping_publisher CONCURRENCY=20 rake resque_async:work
+    $ QUEUE=ping_publisher CONCURRENCY=20 rake em_resque:work
 
 ### Signals
 
@@ -175,12 +163,14 @@ require 'em-resque/tasks'
 
 Now:
 
-    $ QUEUE=* FIBERS=50 rake resque_async:work
+    $ QUEUE=* FIBERS=50 rake em_resque:work
 
 Alternately you can define a `resque:setup` hook in your Rakefile if you
 don't want to load your app every time rake runs.
 
 ### In a Rails 3 app, as a gem
+
+*EM::Resque is not supporting Rails at the moment. Needs more work.*
 
 First include it in your Gemfile.
 
@@ -208,9 +198,9 @@ require 'em-resque/tasks'
 
 Now:
 
-    $ QUEUE=* FIBERS=50 rake environment resque_async:work
+    $ QUEUE=* FIBERS=50 rake environment em_resque:work
 
-Don't forget you can define a `resque:setup` hook in
+Don't forget you can define a `em_resque:setup` hook in
 `lib/tasks/whatever.rake` that loads the `environment` task every time.
 
 If using ActiveRecord or any other libraries with EM::Resque, you have to use
@@ -226,46 +216,13 @@ set various other options at startup.
 EM::Resque has a `redis` setter which can be given a string or a Redis
 object. This means if you're already using Redis in your app, EM::Resque
 can re-use the existing connection. EM::Resque is using the non-blocking
-EM::Resque by default.
+em-redis by default.
 
 String: `Resque.redis = 'localhost:6379'`
 
 Redis: `Resque.redis = $redis`
 
-For our rails app we have a `config/initializers/em-resque.rb` file where
-we load `config/resque.yml` by hand and set the Redis information
-appropriately.
-
-Here's our `config/resque.yml`:
-
-    development: localhost:6379
-    test: localhost:6379
-    staging: localhost:6379
-    production: db.sponsorpay.com:6379
-
-And our initializer:
-
-``` ruby
-rails_root = ENV['RAILS_ROOT'] || File.dirname(__FILE__) + '/../..'
-rails_env = ENV['RAILS_ENV'] || 'development'
-
-resque_config = YAML.load_file(rails_root + '/config/em-resque.yml')
-EM::Resque.redis = resque_config[rails_env]
-```
-
-Easy peasy! Why not just use `RAILS_ROOT` and `RAILS_ENV`? Because
-this way we can tell our Sinatra app about the config file:
-
-    $ RAILS_ENV=production resque-web rails_root/config/initializers/resque.rb
-
-Now everyone is on the same page.
-
-Also, you could disable jobs queueing by setting 'inline' attribute.
-For example, if you want to run all jobs in the same process for cucumber, try:
-
-``` ruby
-EM::Resque.inline = ENV['RAILS_ENV'] == "cucumber"
-```
+TODO: Better configuration instructions.
 
 Namespaces
 ----------
@@ -281,7 +238,7 @@ in your Redis server.
 Simply use the `EM::Resque.redis.namespace` accessor:
 
 ``` ruby
-EM::Resque.redis.namespace = "resque:GitHub"
+EM::Resque.redis.namespace = "resque:SponsorPay"
 ```
 
 We recommend sticking this in your initializer somewhere after Redis
