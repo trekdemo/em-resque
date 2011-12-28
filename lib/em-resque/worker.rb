@@ -4,9 +4,9 @@ require 'resque'
 # a non-blocking version of sleep. 
 class EventMachine::Resque::Worker < Resque::Worker
   # Start working
-  def work(interval)
+  def work(interval = 5.0, &block)
     interval = Float(interval)
-    register_worker
+    startup
 
     loop do
       break if shutdown?
@@ -16,7 +16,7 @@ class EventMachine::Resque::Worker < Resque::Worker
         job.worker = self
         working_on job
 
-        perform(job)
+        perform(job, &block)
 
         done_working
       else
@@ -28,6 +28,12 @@ class EventMachine::Resque::Worker < Resque::Worker
 
   ensure
     unregister_worker
+  end
+
+  def startup
+    enable_gc_optimizations
+    register_worker
+    $stdout.sync = true
   end
 
   # Tell Redis we've processed a job.
