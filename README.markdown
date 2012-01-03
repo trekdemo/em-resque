@@ -170,42 +170,45 @@ don't want to load your app every time rake runs.
 
 ### In a Rails 3 app, as a gem
 
-*EM::Resque is not supporting Rails at the moment. Needs more work.*
+*EM::Resque is not supporting Rails with Rake at the moment. Needs more work.*
 
-First include it in your Gemfile.
+To run EM::Resque with your Rails application, you need a specified script to
+load all the needed libraries and start the workers.
 
-    $ cat Gemfile
-    ...
-    gem 'em-resque'
-    ...
-
-Next install it with Bundler.
-
-    $ bundle install
-
-Now start your application:
-
-    $ rails server
-
-That's it! You can now create EM::Resque jobs from within your app.
-
-To start the workers, add this to a file in `lib/tasks` (ex:
-`lib/tasks/em-resque.rake`):
+*script/resque_async.rb*
 
 ``` ruby
-require 'em-resque/tasks'
+RAILS_ENV = ENV['RAILS_ENV'] || 'development_async'
+RAILS_ROOT = Dir.pwd
+
+require 'rubygems'
+require 'yaml'
+require 'uri'
+require 'em-resque'
+require 'em-resque/worker_machine'
+require 'em-resque/task_helper'
+require 'resque-retry'
+require 'em-synchrony'
+require 'em-synchrony/connection_pool'
+require 'em-synchrony/mysql2'
+
+Dir.glob(File.join(RAILS_ROOT, 'lib', 'async_worker', '**', '*.rb')).sort.each{|f| require File.expand_path(f)}
+
+resque_config = YAML.load_file("#{RAILS_ROOT}/config/resque.yml")
+proxy_config = YAML.load_file("#{RAILS_ROOT}/config/proxy.yml")
+PROXY = proxy_config ? proxy_config[RAILS_ENV] : nil
+
+EM::Resque.redis = resque_config[RAILS_ENV]
+EM::Resque::WorkerMachine.new(TaskHelper.parse_opts_from_env).start
 ```
 
-Now:
+You can start the script with the same environment variables as with the Rake
+task.
 
-    $ QUEUE=* FIBERS=50 rake environment em_resque:work
-
-Don't forget you can define a `em_resque:setup` hook in
-`lib/tasks/whatever.rake` that loads the `environment` task every time.
-
-If using ActiveRecord or any other libraries with EM::Resque, you have to use
-versions that support EventMachine. Otherwise every call to database etc. will
-block all the other fibers in the process and kill the performance. 
+Now we have our own minimal ORM backed with em-powered mysql connection pool to
+handle our models, but there's a library in [em-synchrony][2] called
+em-activerecord which can be combined with [async mysql2][3] library to handle
+sql connections inside the EventMachine. 
 
 Configuration
 -------------
@@ -268,3 +271,5 @@ Julius de Bruijn :: julius.bruijn@sponsorpay.com :: @pimeys
 
 [0]: http://github.com/defunkt/resque
 [1]: http://rubyeventmachine.com/
+[2]: https://github.com/igrigorik/em-synchrony
+[3]: https://github.com/brianmario/mysql2/blob/master/lib/mysql2/em.rb
