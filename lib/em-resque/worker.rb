@@ -3,36 +3,20 @@ require 'resque'
 # A non-forking version of Resque worker, which handles waiting with
 # a non-blocking version of sleep. 
 class EventMachine::Resque::Worker < Resque::Worker
-  # Start working
-  def work(interval = 5.0, &block)
-    interval = Float(interval)
-    startup
-
-    loop do
-      break if shutdown?
-
-      if not paused? and job = reserve
-        log "got: #{job.inspect}"
-        job.worker = self
-        working_on job
-
-        perform(job, &block)
-
-        done_working
-      else
-        break if interval.zero?
-        log! "Sleeping for #{interval} seconds #{self}"
-        EM::Synchrony.sleep interval
-      end
-    end
-
-  ensure
-    unregister_worker
+  # Overwrite system sleep with the non-blocking version
+  def sleep(interval)
+    EM::Synchrony.sleep interval
+  end
+  
+  # Be sure we're never forking
+  def fork
+    nil
   end
 
+  # Simpler startup
   def startup
-    enable_gc_optimizations
     register_worker
+    @cant_fork = true
     $stdout.sync = true
   end
 
