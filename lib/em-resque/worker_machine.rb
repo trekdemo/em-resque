@@ -40,6 +40,7 @@ module EventMachine
         build_fibers
         trap_signals
         prune_dead_workers
+        create_pidfile
       end
 
       # Start the machine and start polling queues.
@@ -108,6 +109,10 @@ module EventMachine
             EM::Synchrony.sleep 1
           end
         end
+      end
+
+      def create_pidfile
+        File.open(@pidfile, 'w') { |f| f << @workers.first.pid } if @pidfile
       end
     end
   end
