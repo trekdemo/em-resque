@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    em-resque (0.9.0)
+    em-resque (1.0.0.beta1)
       em-redis
       em-synchrony (~> 1.0.0)
       resque (~> 1.19.0)
@@ -20,7 +20,7 @@ GEM
     mocha (0.9.12)
     multi_json (1.0.4)
     rack (1.3.5)
-    rack-protection (1.1.4)
+    rack-protection (1.2.0)
       rack
     rack-test (0.6.1)
       rack (>= 1.0)
