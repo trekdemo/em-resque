@@ -198,8 +198,8 @@ resque_config = YAML.load_file("#{RAILS_ROOT}/config/resque.yml")
 proxy_config = YAML.load_file("#{RAILS_ROOT}/config/proxy.yml")
 PROXY = proxy_config ? proxy_config[RAILS_ENV] : nil
 
-EM::Resque.redis = resque_config[RAILS_ENV]
-EM::Resque::WorkerMachine.new(TaskHelper.parse_opts_from_env).start
+opts = TaskHelper.parse_opts_from_env.merge(:redis => resque_config[RAILS_ENV])
+EM::Resque::WorkerMachine.new(opts).start
 ```
 
 You can start the script with the same environment variables as with the Rake
@@ -216,16 +216,16 @@ Configuration
 You may want to change the Redis host and port Resque connects to, or
 set various other options at startup.
 
-EM::Resque has a `redis` setter which can be given a string or a Redis
-object. This means if you're already using Redis in your app, EM::Resque
-can re-use the existing connection. EM::Resque is using the non-blocking
-em-redis by default.
+WorkerMachine has a `redis` parameter in the initializer, which can be 
+given a string or a Redis object. This means if you're already using 
+Redis in your app, EM::Resquec an re-use the existing connection. 
+EM::Resque is using the non-blocking em-redis when given the host as a
+string. If using a Redis object, please use the non-blocking
+EM::Protocols::Redis.
 
-String: `Resque.redis = 'localhost:6379'`
+String: `EM::Resque::WorkerMachine.new(opts.merge(:redis => 'localhost:6379'))`
 
-Redis: `Resque.redis = $redis`
-
-TODO: Better configuration instructions.
+Redis: `EM::Resque::WorkerMachine.new(opts.merge(:redis => $redis))`
 
 Namespaces
 ----------
