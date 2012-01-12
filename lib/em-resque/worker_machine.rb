@@ -122,7 +122,7 @@ module EventMachine
         when String
           if server =~ /redis\:\/\//
             host, port = server.split('/', 3).last.split(':')
-            redis = EM::Protocols::Redis.connect(:host => server, :thread_safe => true)
+            redis = EM::Protocols::Redis.connect(:host => host, :port => port, :thread_safe => true)
           else
             server, namespace = server.split('/', 2)
             host, port, db = server.split(':')
