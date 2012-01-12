@@ -8,7 +8,7 @@ module EM::Resque
     when String
       if server =~ /redis\:\/\//
         host, port = server.split('/', 3).last.split(':')
-        redis = EM::Protocols::Redis.connect(:host => host, :port => port)
+        redis = EM::Protocols::Redis.connect(:host => server, :thread_safe => true)
       else
         server, namespace = server.split('/', 2)
         host, port, db = server.split(':')
@@ -17,11 +17,11 @@ module EM::Resque
       end
       namespace ||= :resque
 
-      @redis = Redis::Namespace.new(namespace, :redis => redis)
+      Resque.redis = Redis::Namespace.new(namespace, :redis => redis)
     when Redis::Namespace
-      @redis = server
+      Resque.redis = server
     else
-      @redis = Redis::Namespace.new(:resque, :redis => server)
+      Resque.redis = Redis::Namespace.new(:resque, :redis => server)
     end
   end
 end
