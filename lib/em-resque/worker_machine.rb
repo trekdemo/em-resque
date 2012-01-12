@@ -47,7 +47,7 @@ module EventMachine
       # Start the machine and start polling queues.
       def start
         EM.synchrony do
-          EM::Resque.redis = redis_instance(@redis)
+          EM::Resque.redis = EM::Resque.redis_instance(@redis)
           @fibers.each(&:resume)
           system_monitor.resume
         end
