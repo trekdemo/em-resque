@@ -33,6 +33,7 @@ module EventMachine
         @verbose = opts[:logging] || opts[:verbose] || false
         @very_verbose = opts[:vverbose] || false
         @pidfile = opts[:pidfile]
+        @redis = opts[:redis].split('/', 3).last.split(':') if opts[:redis]
 
         raise(ArgumentError, "Should have at least one fiber") if @fibers_count.to_i < 1
 
@@ -46,6 +47,7 @@ module EventMachine
       # Start the machine and start polling queues.
       def start
         EM.synchrony do
+          EM::Resque.redis = EM::Protocols::Redis.connect(:host => @redis[0], :port => @redis[1])
           @fibers.each(&:resume)
           system_monitor.resume
         end
