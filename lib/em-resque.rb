@@ -3,7 +3,7 @@ require 'em-synchrony/em-redis'
 
 module EM::Resque
   extend Resque
-  def redis=(server)
+  def redis_instance(server)
     case server
     when String
       if server =~ /redis\:\/\//
@@ -17,11 +17,11 @@ module EM::Resque
       end
       namespace ||= :resque
 
-      Resque.redis = Redis::Namespace.new(namespace, :redis => redis)
+      Redis::Namespace.new(namespace, :redis => redis)
     when Redis::Namespace
-      Resque.redis = server
+      server
     else
-      Resque.redis = Redis::Namespace.new(:resque, :redis => server)
+      Redis::Namespace.new(:resque, :redis => server)
     end
   end
 end
