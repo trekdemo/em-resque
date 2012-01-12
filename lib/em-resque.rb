@@ -7,7 +7,8 @@ module EM::Resque
     case server
     when String
       if server =~ /redis\:\/\//
-        redis = EM::Protocols::Redis.connect(:url => server, :thread_safe => true)
+        host, port = server.split('/', 3).last.split(':')
+        redis = EM::Protocols::Redis.connect(:host => host, :port => port)
       else
         server, namespace = server.split('/', 2)
         host, port, db = server.split(':')
