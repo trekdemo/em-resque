@@ -47,7 +47,7 @@ module EventMachine
       # Start the machine and start polling queues.
       def start
         EM.synchrony do
-          EM::Resque.redis = EM::Resque.redis_instance(@redis)
+          EM::Resque.redis = redis_instance(@redis)
           @fibers.each(&:resume)
           system_monitor.resume
         end
@@ -115,6 +115,28 @@ module EventMachine
 
       def create_pidfile
         File.open(@pidfile, 'w') { |f| f << @workers.first.pid } if @pidfile
+      end
+
+      def redis_instance(server)
+        case server
+        when String
+          if server =~ /redis\:\/\//
+            host, port = server.split('/', 3).last.split(':')
+            redis = EM::Protocols::Redis.connect(:host => server, :thread_safe => true)
+          else
+            server, namespace = server.split('/', 2)
+            host, port, db = server.split(':')
+            redis = EM::Protocols::Redis.new(:host => host, :port => port,
+                                             :thread_safe => true, :db => db)
+          end
+          namespace ||= :resque
+
+          Redis::Namespace.new(namespace, :redis => redis)
+        when Redis::Namespace
+          server
+        else
+          Redis::Namespace.new(:resque, :redis => server)
+        end
       end
     end
   end
