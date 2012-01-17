@@ -37,8 +37,6 @@ module EventMachine
 
         raise(ArgumentError, "Should have at least one fiber") if @fibers_count.to_i < 1
 
-        build_workers
-        build_fibers
         create_pidfile
       end
 
@@ -46,6 +44,8 @@ module EventMachine
       def start
         EM.synchrony do
           EM::Resque.redis = redis_instance(@redis)
+          build_workers
+          build_fibers
           prune_dead_workers
           trap_signals
           @fibers.each(&:resume)
