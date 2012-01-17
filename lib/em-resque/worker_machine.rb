@@ -39,8 +39,6 @@ module EventMachine
 
         build_workers
         build_fibers
-        trap_signals
-        prune_dead_workers
         create_pidfile
       end
 
@@ -48,6 +46,8 @@ module EventMachine
       def start
         EM.synchrony do
           EM::Resque.redis = redis_instance(@redis)
+          prune_dead_workers
+          trap_signals
           @fibers.each(&:resume)
           system_monitor.resume
         end
@@ -114,7 +114,7 @@ module EventMachine
       end
 
       def create_pidfile
-        File.open(@pidfile, 'w') { |f| f << @workers.first.pid } if @pidfile
+        File.open(@pidfile, 'w') { |f| f << Process.pid } if @pidfile
       end
 
       def redis_instance(server)
