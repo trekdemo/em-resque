@@ -33,7 +33,7 @@ module EventMachine
         @verbose = opts[:logging] || opts[:verbose] || false
         @very_verbose = opts[:vverbose] || false
         @pidfile = opts[:pidfile]
-        @redis = opts[:redis]
+        @redis_uri = opts[:redis] || "redis://127.0.0.1:6379"
 
         raise(ArgumentError, "Should have at least one fiber") if @fibers_count.to_i < 1
 
@@ -43,11 +43,11 @@ module EventMachine
       # Start the machine and start polling queues.
       def start
         EM.synchrony do
-          EM::Resque.redis = redis_instance(@redis)
+          EM::Resque.redis = @redis_uri
           build_workers
           build_fibers
-          prune_dead_workers
           trap_signals
+          prune_dead_workers
           @fibers.each(&:resume)
           system_monitor.resume
         end
@@ -115,28 +115,6 @@ module EventMachine
 
       def create_pidfile
         File.open(@pidfile, 'w') { |f| f << Process.pid } if @pidfile
-      end
-
-      def redis_instance(server)
-        case server
-        when String
-          if server =~ /redis\:\/\//
-            host, port = server.split('/', 3).last.split(':')
-            redis = EM::Protocols::Redis.connect(:host => host, :port => port, :thread_safe => true)
-          else
-            server, namespace = server.split('/', 2)
-            host, port, db = server.split(':')
-            redis = EM::Protocols::Redis.new(:host => host, :port => port,
-                                             :thread_safe => true, :db => db)
-          end
-          namespace ||= :resque
-
-          Redis::Namespace.new(namespace, :redis => redis)
-        when Redis::Namespace
-          server
-        else
-          Redis::Namespace.new(:resque, :redis => server)
-        end
       end
     end
   end
