@@ -1,12 +1,13 @@
 require 'resque'
 require 'em-synchrony'
 require 'em-synchrony/em-redis'
+require 'em-synchrony/connection_pool'
 require 'uri'
 
 module EM::Resque
   extend Resque
 
-  def self.redis=(server)
+  def self.initialize_redis(server, pool_size = 1)
     case server
     when String
       opts = if server =~ /redis\:\/\//
@@ -20,7 +21,9 @@ module EM::Resque
 
       namespace ||= :resque
 
-      redis = EM::Protocols::Redis.connect(opts)
+      redis = EventMachine::Synchrony::ConnectionPool.new(:size => pool_size) do
+        EM::Protocols::Redis.connect(opts)
+      end
 
       Resque.redis = Redis::Namespace.new(namespace, :redis => redis)
     when Redis::Namespace

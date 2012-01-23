@@ -1,8 +1,8 @@
 PATH
   remote: .
   specs:
-    em-resque (1.0.0.beta5)
-      em-redis
+    em-resque (1.0.0.beta8)
+      em-redis (~> 0.3.0)
       em-synchrony (~> 1.0.0)
       resque (~> 1.19.0)
 

@@ -37,15 +37,15 @@ module EventMachine
 
         raise(ArgumentError, "Should have at least one fiber") if @fibers_count.to_i < 1
 
+        build_workers
+        build_fibers
         create_pidfile
       end
 
       # Start the machine and start polling queues.
       def start
         EM.synchrony do
-          EM::Resque.redis = @redis_uri
-          build_workers
-          build_fibers
+          EM::Resque.initialize_redis(@redis_uri, @fibers_count)
           trap_signals
           prune_dead_workers
           @fibers.each(&:resume)
