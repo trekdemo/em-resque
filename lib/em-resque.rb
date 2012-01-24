@@ -29,7 +29,10 @@ module EM::Resque
     when Redis::Namespace
       Resque.redis = server
     else
-      Resque.redis = Redis::Namespace.new(namespace, :redis => server)
+      redis = EventMachine::Synchrony::ConnectionPool.new(:size => pool_size) do
+        server
+      end
+      Resque.redis = Redis::Namespace.new(namespace, :redis => redis)
     end
   end
 end
