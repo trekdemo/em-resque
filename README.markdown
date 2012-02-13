@@ -110,13 +110,6 @@ when the main process terminates. The default value is 1.
 
     $ QUEUE=ping_publisher FIBERS=50 rake em_resque:work
 
-### The amount of green threads
-
-EventMachine has an option to use defer for long-running processes to be run in
-a different thread. The default value is 20.
-
-    $ QUEUE=ping_publisher CONCURRENCY=20 rake em_resque:work
-
 ### Signals
 
 EM:Resque workers respond to a few different signals:
