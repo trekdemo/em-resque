@@ -38,9 +38,9 @@ class Pinger
   @queue = :ping_publisher
 
   def self.perform(url)
-    self.url = url
-    self.result = EventMachine::HttpRequest.new(url).get.response
-    self.save
+    res = Result.new
+    res.http_result = EventMachine::HttpRequest.new(url).get.response
+    res.save
   end
 end
 ```
