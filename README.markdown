@@ -8,6 +8,8 @@ forking a new one for every job. It can run N workers inside one process, it
 packs all of them in Ruby fibers. The library is meant for small but IO-heavy
 jobs, which won't use much of CPU power in the running server.
 
+Read the blog post [Resque with EventMachine][4] about solving our problems with this gem.
+
 Use cases
 ---------
 
@@ -273,3 +275,4 @@ Julius de Bruijn :: julius.bruijn@sponsorpay.com :: @pimeys
 [1]: http://rubyeventmachine.com/
 [2]: https://github.com/igrigorik/em-synchrony
 [3]: https://github.com/brianmario/mysql2/blob/master/lib/mysql2/em.rb
+[4]: http://sponsorpay.github.com/blog/2012/01/03/resque-with-eventmachine/
