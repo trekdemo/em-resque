@@ -56,7 +56,6 @@ module EventMachine
       # Stop the machine.
       def stop
         @workers.each(&:shutdown)
-        File.delete(@pidfile) if @pidfile
       end
 
       def fibers
