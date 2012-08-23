@@ -10,9 +10,9 @@ module EM::Resque
   def self.initialize_redis(server, namespace = :resque, pool_size = 1)
     case server
     when String
-      redis = Redis::Namespace.new(namespace, EventMachine::Synchrony::ConnectionPool.new(:size => pool_size) do
+      redis = EventMachine::Synchrony::ConnectionPool.new(:size => pool_size) do
         EM::Hiredis.connect(server)
-      end)
+      end
 
       Resque.redis = Redis::Namespace.new(namespace, :redis => redis)
     when Redis::Namespace
