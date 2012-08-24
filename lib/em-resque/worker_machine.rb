@@ -19,8 +19,6 @@ module EventMachine
       # concurrency::  The number of green threads inside the machine (default 20)
       # interval::     Time in seconds how often the workers check for new work
       #                (default 5)
-      # fibers_count:: How many fibers (and workers) to be run inside the
-      #                machine (default 1)
       # queues::       Which queues to poll (default all)
       # verbose::      Verbose log output (default false)
       # vverbose::     Even more verbose log output (default false)
@@ -28,7 +26,8 @@ module EventMachine
       def initialize(opts = {})
         @concurrency = opts[:concurrency] || 20
         @interval = opts[:interval] || 5
-        @fibers_count = opts[:fibers] || 1
+        # Hard code 1 fiber here
+        @fibers_count = 1
         @queues = opts[:queue] || opts[:queues] || '*'
         @verbose = opts[:logging] || opts[:verbose] || false
         @very_verbose = opts[:vverbose] || false
@@ -50,7 +49,11 @@ module EventMachine
           trap_signals
           prune_dead_workers
           @fibers.each(&:resume)
-          system_monitor.resume
+
+          # If we're only using 1 fiber, we don't need to monitor for yielding
+          if @fibers_count > 1
+            system_monitor.resume
+          end
         end
       end
 
