@@ -7,7 +7,7 @@ class EventMachine::Resque::Worker < Resque::Worker
 
   def initialize(*args)
     super(*args)
-    self.tick_instead_of_sleep = true
+    self.tick_instead_of_sleep = false
   end
 
   # Overwrite system sleep with the non-blocking version

@@ -34,7 +34,7 @@ module EventMachine
         @pidfile = opts[:pidfile]
         @redis_namespace = opts[:namespace] || :resque
         @redis_uri = opts[:redis] || "redis://127.0.0.1:6379"
-        @tick_instead_of_sleep = !opts[:tick_instead_of_sleep].nil? ? opts[:tick_instead_of_sleep] : true
+        @tick_instead_of_sleep = !opts[:tick_instead_of_sleep].nil? ? opts[:tick_instead_of_sleep] : false
 
         # If we're ticking instead of sleeping, we can only have one fiber
         if @tick_instead_of_sleep
