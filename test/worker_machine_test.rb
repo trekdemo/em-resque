@@ -13,7 +13,7 @@ context 'WorkerMachine' do
 
   test 'should not run with under one fibers' do
     assert_raise(ArgumentError, "Should have at least one fiber") do
-      machine = EM::Resque::WorkerMachine.new :fibers => 0
+      machine = EM::Resque::WorkerMachine.new :fibers => 0, :tick_instead_of_sleep => false
     end
   end
 end

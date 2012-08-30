@@ -3,17 +3,34 @@ require 'resque'
 # A non-forking version of Resque worker, which handles waiting with
 # a non-blocking version of sleep. 
 class EventMachine::Resque::Worker < Resque::Worker
+  attr_accessor :tick_instead_of_sleep
+
+  def initialize(*args)
+    super(*args)
+    self.tick_instead_of_sleep = true
+  end
+
   # Overwrite system sleep with the non-blocking version
   def sleep(interval)
     EM::Synchrony.sleep interval
   end
 
-  # Overwrite Resque's #work method to one that ticks through a reactor instead of one that uses EM::Synchrony sleep.
+  # Overwrite Resque's #work method to allow us to determine whether or not we want to ticks through a reactor
+  # instead of using EM::Synchrony sleep.
   #
-  # The reason I'm not doing that is because when sending push notifications and using 1 fiber, the response from Apple
+  # The reason for this option is because when sending push notifications and using 1 fiber, the response from Apple
   # will come after another job has been finished and is generally unreliable. Note that this means that you can't use
-  # this worker with more than one fiber.
+  # this worker with more than one fiber for push workers.
   def work(interval = 5.0, &block)
+    if self.tick_instead_of_sleep
+      work_tick(interval, &block)
+    else
+      super(interval, &block)
+    end
+  end
+
+  # Resque::Worker's #work method modified to use EM.next_tick instead of sleep
+  def work_tick(interval, &block)
     interval = Float(interval)
     $0 = "resque: Starting"
     startup
