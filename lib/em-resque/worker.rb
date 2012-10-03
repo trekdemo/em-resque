@@ -82,7 +82,7 @@ class EventMachine::Resque::Worker < Resque::Worker
   end
   
   # Be sure we're never forking
-  def fork
+  def fork(*args)
     nil
   end
 
