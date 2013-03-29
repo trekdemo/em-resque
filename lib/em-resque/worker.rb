@@ -62,9 +62,7 @@ class EventMachine::Resque::Worker < Resque::Worker
           redis.client.reconnect # Don't share connection with parent
           perform(job, &block)
           exit! unless @cant_fork
-          EM::Timer.new(interval) do
-            EM.next_tick(&work_loop)
-          end
+          EM.next_tick(&work_loop)
         end
 
         done_working
