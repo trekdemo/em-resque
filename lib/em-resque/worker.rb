@@ -91,13 +91,6 @@ class EventMachine::Resque::Worker < Resque::Worker
     $stdout.sync = true
   end
 
-  # Tell Redis we've processed a job.
-  def processed!
-    Resque::Stat << "processed"
-    Resque::Stat << "processed:#{self}"
-    Resque::Stat << "processed_#{job['queue']}"
-  end
-
   # The string representation is the same as the id for this worker instance.
   # Can be used with Worker.find
   def to_s
