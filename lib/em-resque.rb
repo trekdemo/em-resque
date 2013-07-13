@@ -1,6 +1,6 @@
 require 'resque'
 require 'em-synchrony'
-require 'em-hiredis'
+require 'em-synchrony/em-hiredis'
 require 'em-synchrony/connection_pool'
 require 'uri'
 
